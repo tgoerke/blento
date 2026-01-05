@@ -1,11 +1,10 @@
 # blento
 
-WORK IN PROGRESS, not ready for use yet, but you can test it out at: https://blento.app
+WORK IN PROGRESS, not ready for use yet, but you can test it out at: https://blento.app (no guarantee that your blento wont be broken at some point though and might have to be recreated).
 
 your personal website in a bento style layout, using your bluesky PDS as a backend.
 
 made with svelte, tailwind.
-
 
 ## Selfhosting
 
@@ -21,4 +20,4 @@ made with svelte, tailwind.
 	}
 ```
 
-DONE :)
+DONE :) your blento should be live after a minute or two at `your-cloudflare-worker-or-custom-domain.com` and you can edit it by signing in with your bluesky account at `your-cloudflare-worker-or-custom-domain.com/edit`
