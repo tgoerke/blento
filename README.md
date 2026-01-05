@@ -6,7 +6,7 @@ your personal website in a bento style layout, using your bluesky PDS as a backe
 
 made with svelte, tailwind.
 
-## Selfhosting
+## Selfhosting with cloudflare workers
 
 - fork this repo
 - create a cloudflare worker application and connect it to your fork
