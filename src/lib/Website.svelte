@@ -15,7 +15,7 @@
 
 	// svelte-ignore state_referenced_locally
 	setDidContext(did);
-	
+
 	let maxHeight = $derived(
 		items.reduce(
 			(max, item) => Math.max(max, isMobile ? item.mobileY + item.mobileH : item.y + item.h),
@@ -40,5 +40,14 @@
 			{/each}
 			<div style="height: {(maxHeight / 4) * 100}cqw;"></div>
 		</div>
+	</div>
+
+	<div class="block text-xs font-light @5xl/wrapper:hidden mx-auto text-center pb-8">
+		made with <a
+			href="https://blento.app"
+			target="_blank"
+			class="hover:text-accent-600 dark:hover:text-accent-400 font-medium transition-colors duration-200"
+			>blento</a
+		>
 	</div>
 </div>

@@ -2,8 +2,10 @@
 	import Head from './Head.svelte';
 
 	import { marked } from 'marked';
-	import { client } from './oauth';
+	import { client, login } from './oauth';
 	import { Button } from '@foxui/core';
+	import { BlueskyLogin } from '@foxui/social';
+	import { env } from '$env/dynamic/public';
 	let {
 		handle,
 		did,
@@ -22,7 +24,7 @@
 
 <!-- lg:fixed lg:h-screen lg:w-1/4 lg:max-w-none lg:px-12 lg:pt-24 xl:w-1/3 -->
 <div
-	class="mx-auto flex max-w-2xl px-10 pt-16 pb-8 @5xl/wrapper:fixed @5xl/wrapper:h-screen @5xl/wrapper:w-1/4 @5xl/wrapper:max-w-none @5xl/wrapper:px-12 @5xl/wrapper:pt-24 @7xl/wrapper:w-1/3"
+	class="mx-auto flex max-w-2xl flex-col justify-between px-8 pt-16 pb-8 @5xl/wrapper:fixed @5xl/wrapper:h-screen @5xl/wrapper:w-1/4 @5xl/wrapper:max-w-none @5xl/wrapper:px-12 @5xl/wrapper:pt-24 @7xl/wrapper:w-1/3"
 >
 	<div class="flex flex-col gap-4">
 		<Head
@@ -34,7 +36,9 @@
 			src={'https://cdn.bsky.app/img/avatar/plain/' + did + '/' + profileData?.avatar.ref.$link}
 			alt=""
 		/>
-		<div class="line-clamp-2 text-4xl font-bold wrap-anywhere">{(profileData?.displayName || handle)}</div>
+		<div class="line-clamp-2 text-4xl font-bold wrap-anywhere">
+			{profileData?.displayName || handle}
+		</div>
 
 		<div
 			class="text-base-600 dark:text-base-400 prose dark:prose-invert prose-a:text-accent-500 prose-a:no-underline line-clamp-3"
@@ -44,7 +48,7 @@
 
 		{#if showEditButton && client.isLoggedIn && client.profile?.did === did}
 			<div>
-				<Button href="./edit" class="mt-2">
+				<Button href="{env.PUBLIC_IS_SELFHOSTED && client.profile?.handle}/edit" class="mt-2">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -63,5 +67,44 @@
 				>
 			</div>
 		{/if}
+
+		{#if !env.PUBLIC_IS_SELFHOSTED && handle === 'blento.app' && client.profile?.handle !== handle}
+			{#if !client.isInitializing && !client.isLoggedIn}
+				<BlueskyLogin
+					login={async (handle) => {
+						await login(handle);
+						return true;
+					}}
+				/>
+			{:else if client.isLoggedIn}
+				<div>
+					<Button href={client.profile?.handle} class="mt-2">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25"
+							/>
+						</svg>
+
+						Open Your Blento</Button
+					>
+				</div>
+			{/if}
+		{/if}
+	</div>
+	<div class="hidden text-xs font-light @5xl/wrapper:block">
+		made with <a
+			href="https://blento.app"
+			target="_blank"
+			class="hover:text-accent-600 dark:hover:text-accent-400 font-medium transition-colors duration-200"
+			>blento</a
+		>
 	</div>
 </div>

@@ -1,6 +1,8 @@
 import { base } from '$app/paths';
 
-export const SITE_URL = 'https://blento.flobit-dev.workers.dev';
+import { env } from '$env/dynamic/public';
+
+export const SITE_URL = env.PUBLIC_DOMAIN;
 
 export const metadata = {
 	client_id: `${SITE_URL}${base}/client-metadata.json`,

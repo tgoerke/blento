@@ -11,5 +11,5 @@
 	{data}
 	handle={data.handle}
 	did={data.did}
-	items={Object.values(data.data['com.example.bento']).map((i) => i.value) as Item[]}
+	items={Object.values(data.data['app.blento.card']).map((i) => i.value) as Item[]}
 />

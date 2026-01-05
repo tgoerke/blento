@@ -32,7 +32,11 @@
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
-	"vars": { "MAIN_HANDLE": "flo-bit.dev" }
+	"vars": {
+		"PUBLIC_HANDLE": "blento.app",
+		"PUBLIC_IS_SELFHOSTED": "",
+		"PUBLIC_DOMAIN": "https://blento.app"
+	}
 	/**
 	 * Service Bindings (communicate between multiple Workers)
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings

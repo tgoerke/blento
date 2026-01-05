@@ -16,8 +16,6 @@
 
 	let loaded = $state(false);
 
-	let edited = $state(false);
-
 	let {
 		item = $bindable(),
 		placeholder = '',

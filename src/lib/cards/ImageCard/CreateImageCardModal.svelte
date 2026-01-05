@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Modal, Subheading } from '@foxui/core';
+	import { Button, Input, Label, Modal, Subheading } from '@foxui/core';
 	import type { CreationModalComponentProps } from '../types';
 
 	let { item = $bindable(), oncreate, oncancel }: CreationModalComponentProps = $props();
@@ -134,7 +134,7 @@
 		onclick={() => {
 			inputRef?.click();
 		}}
-		class="dark:bg-accent-600/5 hover:bg-accent-400/10 dark:hover:bg-accent-600/10 border-accent-400 bg-accent-400/5 dark:border-accent-800 flex h-44 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed p-4 transition-colors duration-200"
+		class="dark:bg-accent-600/5 hover:bg-accent-400/10 dark:hover:bg-accent-600/10 border-accent-400 bg-accent-400/5 dark:border-accent-800 flex h-32 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed p-2 transition-colors duration-200"
 	>
 		{#if !item.cardData.objectUrl}
 			<svg
@@ -168,6 +168,9 @@
 			bind:this={inputRef}
 		/>
 	</div>
+    <Label class="mt-4">Link (optional):</Label>
+	<Input bind:value={item.cardData.href} />
+
 
 	<div class="mt-4 flex justify-end gap-2">
 		<Button

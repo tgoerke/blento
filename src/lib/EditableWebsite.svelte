@@ -5,7 +5,7 @@
 	import { BlueskyLogin } from '@foxui/social';
 
 	import { margin, mobileMargin } from '$lib';
-	import { cardsEqual, clamp, fixCollisions, setIsMobile, setPositionOfNewItem } from './helper';
+	import { cardsEqual, clamp, fixCollisions, setCanEdit, setIsMobile, setPositionOfNewItem } from './helper';
 	import Profile from './Profile.svelte';
 	import type { Item } from './types';
 	import { deleteRecord, putRecord } from './oauth/atproto';
@@ -54,6 +54,8 @@
 	let isMobile = $derived(showingMobileView || (innerWidth.current ?? 1000) < 1024);
 
 	setIsMobile(() => isMobile);
+
+	setCanEdit(() => client.isLoggedIn && client.profile?.did === did)
 
 	// svelte-ignore state_referenced_locally
 	setDidContext(did);
@@ -137,7 +139,7 @@
 					item = await cardDef?.upload(item);
 				}
 
-				promises.push(putRecord({ collection: 'com.example.bento', rkey: item.id, record: item }));
+				promises.push(putRecord({ collection: 'app.blento.card', rkey: item.id, record: item }));
 			}
 		}
 
@@ -147,7 +149,7 @@
 			if (!item) {
 				console.log('deleting item', originalItem);
 				promises.push(
-					deleteRecord({ collection: 'com.example.bento', rkey: originalItem.id, did })
+					deleteRecord({ collection: 'app.blento.card', rkey: originalItem.id, did })
 				);
 			}
 		}

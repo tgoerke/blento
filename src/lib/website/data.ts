@@ -4,5 +4,5 @@ export const image_collection = 'com.example.image' as const;
 export const data = {
 	'app.bsky.actor.profile': ['self'],
 
-	'com.example.bento': 'all'
+	'app.blento.card': 'all'
 } as const;

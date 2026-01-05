@@ -22,7 +22,7 @@
 		<img
 			class={[
 				'absolute inset-0 h-full w-full object-cover opacity-100 transition-transform duration-300 ease-in-out',
-				item.cardData.href ? 'group-hover:scale-105' : ''
+				item.cardData.href ? 'group-hover:scale-102' : ''
 			]}
 			src={getSrc()}
 			alt=""

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Item } from '$lib/types';
 	import BaseEditingCard, { type BaseEditingCardProps } from '../BaseCard/BaseEditingCard.svelte';
-	import MarkdownTextEditor from './MarkdownTextEditor.svelte';
+	import MarkdownTextEditor from '../utils/MarkdownTextEditor.svelte';
 
 	let { item = $bindable<Item>(), ...rest }: BaseEditingCardProps = $props();
 </script>
