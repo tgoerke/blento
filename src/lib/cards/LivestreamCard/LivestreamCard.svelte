@@ -7,6 +7,8 @@
 	import type { ContentComponentProps } from '../types';
 	import { getImageBlobUrl } from '$lib/website/utils';
 	import { RelativeTime } from '@foxui/time';
+	import { online } from 'svelte/reactivity/window';
+	import { Badge } from '@foxui/core';
 
 	let { item = $bindable() }: ContentComponentProps = $props();
 
@@ -22,6 +24,7 @@
 				title: string;
 				thumb?: string;
 				href: string;
+				online?: boolean;
 		  }
 		| undefined = $state();
 
@@ -38,8 +41,29 @@
 				createdAt: latest.value.createdAt,
 				title: latest.value.title as string,
 				thumb: getImageBlobUrl({ link: latest.value.thumb?.ref.$link, did }),
-				href: latest.value.canonicalUrl || latest.value.url
+				href: latest.value.canonicalUrl || latest.value.url,
+				online: undefined
 			};
+		}
+
+		if (latestLivestream) {
+			try {
+				const segmentsResponse = await fetch(
+					'https://stream.place/xrpc/place.stream.live.getSegments?userDID=' +
+						encodeURIComponent(did)
+				);
+				const segments = await segmentsResponse.json();
+
+				const lastSegment = segments.segments[0];
+				const startTime = new Date(lastSegment.record.startTime).getTime();
+
+				const FIVE_MINUTES = 5 * 60 * 1000;
+				const now = Date.now();
+
+				latestLivestream.online = now - startTime <= FIVE_MINUTES;
+			} catch (error) {
+				console.error(error);
+			}
 		}
 
 		isLoaded = true;
@@ -55,8 +79,23 @@
 					<div class="font-semibold">Latest Livestream</div>
 				</div>
 
-				<div class="mb-2 text-xs font-medium">
-					started <RelativeTime date={new Date(latestLivestream.createdAt)} locale="en-US" /> ago
+				<div class="mb-2 flex items-center gap-2">
+					<div class="text-xs font-medium">
+						started <RelativeTime date={new Date(latestLivestream.createdAt)} locale="en-US" /> ago
+					</div>
+					{#if latestLivestream.online === true}
+						<Badge size="sm">
+							<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+								<circle cx="50" cy="50" r="30" fill="currentColor" />
+							</svg>
+
+							live</Badge
+						>
+					{:else if latestLivestream.online === false}
+						<Badge size="sm">ended</Badge>
+					{:else}
+						<div class="h-[22px]"></div>
+					{/if}
 				</div>
 
 				<a href={latestLivestream?.href} target="_blank" rel="noopener noreferrer">
