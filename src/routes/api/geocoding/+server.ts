@@ -6,15 +6,17 @@ export async function GET({ url }) {
 		return json({ error: 'No search provided' }, { status: 400 });
 	}
 
+	const nomUrl =
+		'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q);
+	console.log(url);
+
 	try {
-		const url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q);
-		console.log(url);
-		const data = await fetch(url);
+		const data = await fetch(nomUrl);
 		const location = await data.json();
 
 		return json(location[0]);
 	} catch (error) {
-		console.error('Error fetching location:', error);
+		console.error('Error fetching location:', nomUrl, error);
 		return json({ error: 'Failed to fetch location' }, { status: 500 });
 	}
 }
