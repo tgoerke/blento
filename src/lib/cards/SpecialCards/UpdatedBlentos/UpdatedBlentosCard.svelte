@@ -10,22 +10,7 @@
 
 	const data = getAdditionalUserData();
 	// svelte-ignore state_referenced_locally
-	const recentRecords = (data[item.cardType] as any);
-
-	let profiles: ProfileViewDetailed[] = $state([]);
-
-	onMount(async () => {
-		let uniqueDids = new Set<string>();
-		for (let record of recentRecords as { did: string }[]) {
-			uniqueDids.add(record.did);
-		}
-
-		for (let did of Array.from(uniqueDids)) {
-			const profile = await getProfile({ did });
-			profiles.push(profile);
-			if (profiles.length > 20) return;
-		}
-	});
+	const profiles = (data[item.cardType] as ProfileViewDetailed[]);
 </script>
 
 <div class="pointer-events-none">
@@ -34,7 +19,7 @@
 	></div>
 	<div class="absolute bottom-3 left-4 text-sm font-semibold">recently updated blentos</div>
 </div>
-<div class="flex h-full max-w-full items-center gap-4 overflow-x-scroll px-8">
+<div class="flex h-full max-w-full items-center gap-4 overflow-x-scroll px-8 overflow-y-hidden">
 	{#each profiles as profile}
 		<a
 			href="/{profile.handle}"
