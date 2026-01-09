@@ -35,9 +35,9 @@
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
 	"vars": {
-		"PUBLIC_HANDLE": "blento.app",
+		"PUBLIC_HANDLE": "blento.t-goerke.workers.dev",
 		"PUBLIC_IS_SELFHOSTED": "",
-		"PUBLIC_DOMAIN": "https://blento.app"
+		"PUBLIC_DOMAIN": "https://blento.t-goerke.workers.dev"
 	},
 	"kv_namespaces": [
 		{
