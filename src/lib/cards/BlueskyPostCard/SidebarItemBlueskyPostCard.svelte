@@ -4,7 +4,7 @@
 	let { onclick }: { onclick: () => void } = $props();
 </script>
 
-<Button {onclick} variant="ghost" class="w-full" size="lg">
+<Button {onclick} variant="ghost" class="w-full justify-start">
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
 		version="1.1"

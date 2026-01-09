@@ -35,4 +35,5 @@ export type CardDefinition = {
 	upload?: (item: Item) => Promise<Item>;
 
 	sidebarComponent?: Component<SidebarComponentProps>;
+	sidebarButtonText?: string;
 };

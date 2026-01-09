@@ -5,7 +5,7 @@
 	let { onclick }: { onclick: () => void } = $props();
 </script>
 
-<Button {onclick} variant="ghost" class="w-full" size="lg">
+<Button {onclick} variant="ghost" class="w-full justify-start">
 	<Icon class="size-4" />
 
 	Latest stream.place

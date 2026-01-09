@@ -3,6 +3,7 @@ import { EmbedCardDefinition } from './EmbedCard';
 import { ImageCardDefinition } from './ImageCard';
 import { LinkCardDefinition } from './LinkCard';
 import { LivestreamCardDefitition, LivestreamEmbedCardDefitition } from './LivestreamCard';
+import { MapCardDefinition } from './MapCard';
 import { UpdatedBlentosCardDefitition } from './SpecialCards/UpdatedBlentos';
 import { TextCardDefinition } from './TextCard';
 import type { CardDefinition } from './types';
@@ -17,7 +18,8 @@ export const AllCardDefinitions = [
 	BlueskyPostCardDefinition,
 	LivestreamCardDefitition,
 	LivestreamEmbedCardDefitition,
-	EmbedCardDefinition
+	EmbedCardDefinition,
+	MapCardDefinition
 ] as const;
 
 export const CardDefinitionsByType = AllCardDefinitions.reduce(
