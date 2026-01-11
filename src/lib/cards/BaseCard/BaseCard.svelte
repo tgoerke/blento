@@ -6,8 +6,8 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 
 	const colors = {
-		base: 'border-base-200 bg-base-50 dark:border-base-800 dark:bg-base-900 border',
-		accent: 'border-accent-200 bg-accent-50 dark:border-accent-900/50 dark:bg-accent-950/50 border',
+		base: 'border-base-200 shadow-lg dark:shadow-none inset-shadow-sm inset-shadow-base-500/10 shadow-base-900/5 bg-base-50 dark:border-base-800 dark:bg-base-900 border',
+		accent: 'border-accent-200 shadow-lg inset-shadow-sm inset-shadow-accent-500/10 shadow-accent-900/10 bg-accent-50 dark:border-accent-900/50 dark:bg-accent-950/20 border',
 		transparent: ''
 	} as Record<string, string>;
 
@@ -33,7 +33,7 @@
 	bind:this={ref}
 	draggable={isEditing}
 	class={[
-		'card group focus-within:outline-accent-500 @container/card absolute z-0 rounded-2xl outline-offset-2 focus-within:outline-2',
+		'card group transition-transform duration-200 focus-within:outline-accent-500 @container/card absolute z-0 rounded-2xl outline-offset-2 focus-within:outline-2',
 		item.color ? (colors[item.color] ?? colors.accent) : colors.base,
 		item.color !== 'accent' && item.color !== 'base' && item.color !== 'transparent'
 			? item.color

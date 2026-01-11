@@ -23,7 +23,7 @@
 
 <Head
 	favicon={'https://cdn.bsky.app/img/avatar/plain/' + did + '/' + profileData?.avatar.ref.$link}
-	title={(profileData?.displayName || handle) + "'s blento"}
+	title={(profileData?.displayName || handle)}
 />
 
 <!-- lg:fixed lg:h-screen lg:w-1/4 lg:max-w-none lg:px-12 lg:pt-24 xl:w-1/3 -->
