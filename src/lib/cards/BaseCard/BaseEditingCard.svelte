@@ -3,11 +3,12 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import BaseCard from './BaseCard.svelte';
 	import type { Item } from '$lib/types';
-	import { Button, Popover } from '@foxui/core';
-	import { getCanEdit, getIsMobile } from '$lib/helper';
+	import { Button, Input, Popover } from '@foxui/core';
+	import { getCanEdit } from '$lib/helper';
 	import { ColorSelect } from '@foxui/colors';
 	import { CardDefinitionsByType, getColor } from '..';
 	import { COLUMNS } from '$lib';
+	import { dev } from '$app/environment';
 
 	let colorsChoices = [
 		{ class: 'text-base-500', label: 'base' },
@@ -57,8 +58,8 @@
 
 	const cardDef = $derived(CardDefinitionsByType[item.cardType]);
 
-	const minW = $derived(cardDef.minW ?? 0);
-	const minH = $derived(cardDef.minH ?? 0);
+	const minW = $derived(cardDef.minW ?? 1);
+	const minH = $derived(cardDef.minH ?? 1);
 
 	const maxW = $derived(cardDef.maxW ?? COLUMNS);
 	const maxH = $derived(cardDef.maxH ?? COLUMNS);
@@ -68,6 +69,8 @@
 
 		return w >= minW && w <= maxW && h >= minH && h <= maxH;
 	}
+
+	let customSizePopoverOpen = $state(false);
 </script>
 
 <BaseCard {item} {...rest} isEditing={true} bind:ref>
@@ -104,7 +107,7 @@
 			<div
 				class={[
 					'absolute -bottom-7 z-50 w-full items-center justify-center text-xs group-focus-within:inline-flex group-hover:inline-flex',
-					colorPopoverOpen ? 'inline-flex' : 'hidden'
+					colorPopoverOpen || customSizePopoverOpen ? 'inline-flex' : 'hidden'
 				]}
 			>
 				<div
@@ -198,6 +201,58 @@
 						</button>
 					{/if}
 
+					{#if dev}
+						<Popover bind:open={customSizePopoverOpen}>
+							{#snippet child({ props })}
+								<button {...props} class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2">
+									<div
+										class="border-base-900 dark:border-base-50 h-5 w-5 rounded-sm border-2"
+									></div>
+
+									<span class="sr-only">set size to 2x2</span>
+								</button>
+							{/snippet}
+
+							<div class="flex flex-col gap-4">
+								<div>
+									<Button
+										onclick={() => {
+											if (canSetSize(item.w - 1, item.h)) {
+												onsetsize?.(item.w - 1, item.h);
+											}
+										}}>-</Button
+									>
+
+									<Button
+										onclick={() => {
+											if (canSetSize(item.w + 1, item.h)) {
+												onsetsize?.(item.w + 1, item.h);
+											}
+										}}>+</Button
+									>
+								</div>
+
+								<div>
+									<Button
+										onclick={() => {
+											if (canSetSize(item.w, item.h - 1)) {
+												onsetsize?.(item.w, item.h - 1);
+											}
+										}}>-</Button
+									>
+
+									<Button
+										onclick={() => {
+											if (canSetSize(item.w, item.h + 1)) {
+												onsetsize?.(item.w, item.h + 1);
+											}
+										}}>+</Button
+									>
+								</div>
+							</div>
+						</Popover>
+					{/if}
+					
 					{#if onshowsettings}
 						<button
 							onclick={() => {
