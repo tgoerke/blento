@@ -3,12 +3,11 @@
 	import type { HTMLAttributes } from 'svelte/elements';
 	import BaseCard from './BaseCard.svelte';
 	import type { Item } from '$lib/types';
-	import { Button, Input, Popover } from '@foxui/core';
-	import { getCanEdit } from '$lib/helper';
+	import { Button, Popover } from '@foxui/core';
+	import { getCanEdit, getIsMobile } from '$lib/helper';
 	import { ColorSelect } from '@foxui/colors';
 	import { CardDefinitionsByType, getColor } from '..';
 	import { COLUMNS } from '$lib';
-	import { dev } from '$app/environment';
 
 	let colorsChoices = [
 		{ class: 'text-base-500', label: 'base' },
@@ -53,6 +52,7 @@
 	let selectedColor = $derived(colorsChoices.find((c) => getColor(item) === c.label));
 
 	let canEdit = getCanEdit();
+	let isMobile = getIsMobile();
 
 	let colorPopoverOpen = $state(false);
 
@@ -64,13 +64,71 @@
 	const maxW = $derived(cardDef.maxW ?? COLUMNS);
 	const maxH = $derived(cardDef.maxH ?? COLUMNS);
 
-	function canSetSize(w: number, h: number) {
-		if (!cardDef) return false;
+	// Resize handle state
+	let isResizing = $state(false);
+	let resizeStartX = $state(0);
+	let resizeStartY = $state(0);
+	let resizeStartW = $state(0);
+	let resizeStartH = $state(0);
 
-		return w >= minW && w <= maxW && h >= minH && h <= maxH;
+	function handleResizeStart(e: PointerEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		isResizing = true;
+		resizeStartX = e.clientX;
+		resizeStartY = e.clientY;
+		// For mobile view, sizes are doubled so we need to account for that
+		resizeStartW = isMobile() ? (item.mobileW ?? item.w) / 2 : item.w;
+		resizeStartH = isMobile() ? (item.mobileH ?? item.h) / 2 : item.h;
+
+		document.addEventListener('pointermove', handleResizeMove);
+		document.addEventListener('pointerup', handleResizeEnd);
 	}
 
-	let customSizePopoverOpen = $state(false);
+	function handleResizeMove(e: PointerEvent) {
+		if (!isResizing || !ref) return;
+
+		// Get the container width to calculate cell size
+		const container = ref.closest('.\\@container\\/grid') as HTMLElement;
+		if (!container) return;
+
+		const containerRect = container.getBoundingClientRect();
+		const cellSize = containerRect.width / COLUMNS;
+
+		// Calculate delta in grid units (each visual unit is 2 grid units)
+		const deltaX = e.clientX - resizeStartX;
+		const deltaY = e.clientY - resizeStartY;
+
+		// Convert pixel delta to grid units (2 grid units = 1 visual cell)
+		const gridDeltaW = Math.round(deltaX / cellSize);
+		const gridDeltaH = Math.round(deltaY / cellSize);
+
+		// Calculate new size (snap to even numbers since visual units are 2 grid units)
+		let newW = resizeStartW + gridDeltaW;
+		let newH = resizeStartH + gridDeltaH;
+
+		// Snap to increments of 2
+		newW = Math.round(newW / 2) * 2;
+		newH = newH;
+
+		// Clamp to min/max
+		newW = Math.max(minW, Math.min(maxW, newW));
+		newH = Math.max(minH, Math.min(maxH, newH));
+
+		// Only call onsetsize if size changed
+		const currentW = isMobile() ? (item.mobileW ?? item.w) / 2 : item.w;
+		const currentH = isMobile() ? (item.mobileH ?? item.h) / 2 : item.h;
+
+		if (newW !== currentW || newH !== currentH) {
+			onsetsize?.(newW, newH);
+		}
+	}
+
+	function handleResizeEnd() {
+		isResizing = false;
+		document.removeEventListener('pointermove', handleResizeMove);
+		document.removeEventListener('pointerup', handleResizeEnd);
+	}
 </script>
 
 <BaseCard {item} {...rest} isEditing={true} bind:ref>
@@ -107,7 +165,7 @@
 			<div
 				class={[
 					'absolute -bottom-7 z-50 w-full items-center justify-center text-xs group-focus-within:inline-flex group-hover:inline-flex',
-					colorPopoverOpen || customSizePopoverOpen ? 'inline-flex' : 'hidden'
+					colorPopoverOpen ? 'inline-flex' : 'hidden'
 				]}
 			>
 				<div
@@ -152,107 +210,6 @@
 						/>
 					</Popover>
 
-					{#if canSetSize(2, 2)}
-						<button
-							onclick={() => {
-								onsetsize?.(2, 2);
-							}}
-							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-						>
-							<div class="border-base-900 dark:border-base-50 size-3 rounded-sm border-2"></div>
-
-							<span class="sr-only">set size to 1x1</span>
-						</button>
-					{/if}
-
-					{#if canSetSize(4, 2)}
-						<button
-							onclick={() => {
-								onsetsize?.(4, 2);
-							}}
-							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-						>
-							<div class="border-base-900 dark:border-base-50 h-3 w-5 rounded-sm border-2"></div>
-							<span class="sr-only">set size to 2x1</span>
-						</button>
-					{/if}
-					{#if canSetSize(2, 4)}
-						<button
-							onclick={() => {
-								onsetsize?.(2, 4);
-							}}
-							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-						>
-							<div class="border-base-900 dark:border-base-50 h-5 w-3 rounded-sm border-2"></div>
-
-							<span class="sr-only">set size to 1x2</span>
-						</button>
-					{/if}
-					{#if canSetSize(4, 4)}
-						<button
-							onclick={() => {
-								onsetsize?.(4, 4);
-							}}
-							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-						>
-							<div class="border-base-900 dark:border-base-50 h-5 w-5 rounded-sm border-2"></div>
-
-							<span class="sr-only">set size to 2x2</span>
-						</button>
-					{/if}
-
-					{#if dev}
-						<Popover bind:open={customSizePopoverOpen}>
-							{#snippet child({ props })}
-								<button {...props} class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2">
-									<div
-										class="border-base-900 dark:border-base-50 h-5 w-5 rounded-sm border-2"
-									></div>
-
-									<span class="sr-only">set size to 2x2</span>
-								</button>
-							{/snippet}
-
-							<div class="flex flex-col gap-4">
-								<div>
-									<Button
-										onclick={() => {
-											if (canSetSize(item.w - 1, item.h)) {
-												onsetsize?.(item.w - 1, item.h);
-											}
-										}}>-</Button
-									>
-
-									<Button
-										onclick={() => {
-											if (canSetSize(item.w + 1, item.h)) {
-												onsetsize?.(item.w + 1, item.h);
-											}
-										}}>+</Button
-									>
-								</div>
-
-								<div>
-									<Button
-										onclick={() => {
-											if (canSetSize(item.w, item.h - 1)) {
-												onsetsize?.(item.w, item.h - 1);
-											}
-										}}>-</Button
-									>
-
-									<Button
-										onclick={() => {
-											if (canSetSize(item.w, item.h + 1)) {
-												onsetsize?.(item.w, item.h + 1);
-											}
-										}}>+</Button
-									>
-								</div>
-							</div>
-						</Popover>
-					{/if}
-					
 					{#if onshowsettings}
 						<button
 							onclick={() => {
@@ -284,6 +241,28 @@
 						</button>
 					{/if}
 				</div>
+			</div>
+
+			<!-- Resize handle at bottom right corner -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class={[
+					'absolute -bottom-2 -right-2 z-50 cursor-se-resize rounded-full p-1 group-focus-within:flex group-hover:flex',
+					isResizing ? 'flex' : 'hidden'
+				]}
+				onpointerdown={handleResizeStart}
+			>
+				<div class="bg-base-100 dark:bg-base-800 border-base-300 dark:border-base-600 flex size-5 items-center justify-center rounded-full border shadow-md">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 16 16"
+						fill="currentColor"
+						class="text-base-500 size-3"
+					>
+						<path d="M5.5 10.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm0-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm4 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm0-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm0-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z" />
+					</svg>
+				</div>
+				<span class="sr-only">Resize card</span>
 			</div>
 		{/if}
 	{/snippet}
