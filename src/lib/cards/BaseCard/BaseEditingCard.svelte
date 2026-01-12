@@ -254,11 +254,12 @@
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
 				<div
 					class={[
-						'absolute inset-0 z-50 cursor-se-resize items-end justify-end overflow-hidden rounded-2xl group-focus-within:flex group-hover:flex',
+						'absolute pointer-events-none inset-0 z-50 items-end justify-end overflow-hidden rounded-2xl group-focus-within:flex group-hover:flex',
 						isResizing ? 'flex' : 'hidden'
 					]}
 					onpointerdown={handleResizeStart}
 				>
+				<div onpointerdown={handleResizeStart} class="pointer-events-auto cursor-se-resize">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
@@ -286,6 +287,7 @@
 						/>
 					</svg>
 					<span class="sr-only">Resize card</span>
+					</div>
 				</div>
 			{/if}
 		{/if}
