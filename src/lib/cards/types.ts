@@ -37,6 +37,23 @@ export type CardDefinition = {
 	sidebarComponent?: Component<SidebarComponentProps>;
 	sidebarButtonText?: string;
 
-	loadData?: (items: Item[], { did, handle }: { did: string; handle: string }) => Promise<unknown>;
+	settingsComponent?: Component<ContentComponentProps>;
+
+	loadData?: (
+		items: Item[],
+		{ did, handle, platform }: { did: string; handle: string; platform?: App.Platform }
+	) => Promise<unknown>;
 	dataKey?: string;
+
+	allowSetColor?: boolean;
+
+	defaultColor?: string;
+
+	minW?: number;
+	maxW?: number;
+
+	minH?: number;
+	maxH?: number;
+
+	canResize?: boolean;
 };

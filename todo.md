@@ -1,11 +1,22 @@
 # todo
 
-- video card
+- [x] video card or image from bluesky
+- general video card
 - edit already created cards (e.g. change link)
 - link card: save favicon and og image to pds
-- more cards list
-- paste handler for card creation
+- [x] more cards list
+- paste handler for card creation (+ when entering link)
 - text cards: align text top middle bottom and left center right
+- change general settings:
+    - show profile
+    - base, accent color
+    - title
+    - favicon
+- set custom card size
+
+- [x] og images
+- separate og image for main page
+
 - more cards:
     - instagram
     - github
@@ -14,7 +25,7 @@
     - social accounts card (multiple)
     - cartoons: aka https://www.opendoodles.com/
     - excalidraw
-    - map
+    - [x] map
     - [x] youtube video
     - youtube channel
     - guestbook
@@ -27,7 +38,14 @@
     - popfeed.social
     - smoke signal
     - statusphere.xyz
-- add some caching to user data
+    - goals.garden
+
+- [x] add some caching to user data
+
+- other fun card ideas:
+    - svader
+    - zdog
+    - tixy
 
 - image cards: different images for dark and light mode
 

@@ -1,5 +1,6 @@
 import { createContext } from 'svelte';
 import type { Item } from './types';
+import { COLUMNS } from '$lib';
 
 export function clamp(value: number, min: number, max: number): number {
 	return Math.min(Math.max(value, min), max);
@@ -39,11 +40,9 @@ export const overlaps = (a: Item, b: Item, mobile: boolean = false) => {
 };
 
 export function fixCollisions(items: Item[], movedItem: Item, mobile: boolean = false) {
-	const COLS = 4;
-
 	const clampX = (item: Item) => {
-		if (mobile) item.mobileX = clamp(item.mobileX, 0, COLS - item.mobileW);
-		else item.x = clamp(item.x, 0, COLS - item.w);
+		if (mobile) item.mobileX = clamp(item.mobileX, 0, COLUMNS - item.mobileW);
+		else item.x = clamp(item.x, 0, COLUMNS - item.w);
 	};
 
 	// Push `target` down until it no longer overlaps with any item (including movedItem),
@@ -91,13 +90,84 @@ export function fixCollisions(items: Item[], movedItem: Item, mobile: boolean = 
 		pushDownCascade(it, movedItem);
 
 		// enforce "x stays the same" during pushing (clamp already applied)
-		if (mobile) it.mobileX = clamp(it.mobileX, 0, COLS - it.mobileW);
-		else it.x = clamp(it.x, 0, COLS - it.w);
+		if (mobile) it.mobileX = clamp(it.mobileX, 0, COLUMNS - it.mobileW);
+		else it.x = clamp(it.x, 0, COLUMNS - it.w);
+	}
+
+	compactItems(items, mobile);
+}
+
+// Move all items up as far as possible without collisions
+export function compactItems(items: Item[], mobile: boolean = false) {
+	// Sort by Y position (top-to-bottom) so upper items settle first.
+	const sortedItems = items.toSorted((a, b) =>
+		mobile ? a.mobileY - b.mobileY || a.mobileX - b.mobileX : a.y - b.y || a.x - b.x
+	);
+
+	for (const item of sortedItems) {
+		// Try moving item up row by row until we hit y=0 or a collision
+		while (true) {
+			const currentY = mobile ? item.mobileY : item.y;
+			if (currentY <= 0) break;
+
+			// Temporarily move up by 1
+			if (mobile) item.mobileY -= 1;
+			else item.y -= 1;
+
+			// Check for collision with any other item
+			const hasCollision = items.some((other) => other !== item && overlaps(item, other, mobile));
+
+			if (hasCollision) {
+				// Revert the move
+				if (mobile) item.mobileY += 1;
+				else item.y += 1;
+				break;
+			}
+			// No collision, keep the new position and try moving up again
+		}
 	}
 }
 
+// Simulate where an item would end up after fixCollisions + compaction
+export function simulateFinalPosition(
+	items: Item[],
+	movedItem: Item,
+	newX: number,
+	newY: number,
+	mobile: boolean = false
+): { x: number; y: number } {
+	// Deep clone positions for simulation
+	const clonedItems: Item[] = items.map((item) => ({
+		...item,
+		x: item.x,
+		y: item.y,
+		mobileX: item.mobileX,
+		mobileY: item.mobileY
+	}));
+
+	const clonedMovedItem = clonedItems.find((item) => item.id === movedItem.id);
+	if (!clonedMovedItem) return { x: newX, y: newY };
+
+	// Set the new position
+	if (mobile) {
+		clonedMovedItem.mobileX = newX;
+		clonedMovedItem.mobileY = newY;
+	} else {
+		clonedMovedItem.x = newX;
+		clonedMovedItem.y = newY;
+	}
+
+	// Run fixCollisions on the cloned data
+	fixCollisions(clonedItems, clonedMovedItem, mobile);
+
+	// Return the final position of the moved item
+	return mobile
+		? { x: clonedMovedItem.mobileX, y: clonedMovedItem.mobileY }
+		: { x: clonedMovedItem.x, y: clonedMovedItem.y };
+}
+
 export function sortItems(a: Item, b: Item) {
-	return a.y * 4 + a.x - b.y * 4 - b.x;
+	return a.y * COLUMNS + a.x - b.y * COLUMNS - b.x;
 }
 
 export function cardsEqual(a: Item, b: Item) {
@@ -120,7 +190,7 @@ export function cardsEqual(a: Item, b: Item) {
 export function setPositionOfNewItem(newItem: Item, items: Item[]) {
 	let foundPosition = false;
 	while (!foundPosition) {
-		for (newItem.x = 0; newItem.x <= 4 - newItem.w; newItem.x++) {
+		for (newItem.x = 0; newItem.x <= COLUMNS - newItem.w; newItem.x++) {
 			const collision = items.find((item) => overlaps(newItem, item));
 			if (!collision) {
 				foundPosition = true;
@@ -132,7 +202,7 @@ export function setPositionOfNewItem(newItem: Item, items: Item[]) {
 
 	let foundMobilePosition = false;
 	while (!foundMobilePosition) {
-		for (newItem.mobileX = 0; newItem.mobileX <= 4 - newItem.mobileW; newItem.mobileX += 1) {
+		for (newItem.mobileX = 0; newItem.mobileX <= COLUMNS - newItem.mobileW; newItem.mobileX += 1) {
 			const collision = items.find((item) => overlaps(newItem, item, true));
 
 			if (!collision) {
@@ -140,7 +210,7 @@ export function setPositionOfNewItem(newItem: Item, items: Item[]) {
 				break;
 			}
 		}
-		if (!foundMobilePosition) newItem.mobileY! += 2;
+		if (!foundMobilePosition) newItem.mobileY! += 1;
 	}
 }
 

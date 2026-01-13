@@ -8,7 +8,6 @@ export const ATProtoCollectionsCardDefinition = {
 	contentComponent: ATProtoCollectionsCard,
 	loadData: async (items, { did }) => {
 		const data = (await describeRepo({ did })).data;
-		console.log(data);
 		const collections = new Set<string>();
 		for (const collection of data.collections) {
 			const split = collection.split('.');
@@ -18,8 +17,8 @@ export const ATProtoCollectionsCardDefinition = {
 		return Array.from(collections);
 	},
 	createNew: (item) => {
-		item.w = 2;
-		item.mobileW = 4;
+		item.w = 4;
+		item.mobileW = 8;
 	},
 	sidebarComponent: SidebarItemATProtoCollectionsCard
 } as CardDefinition & { type: 'atprotocollections' };

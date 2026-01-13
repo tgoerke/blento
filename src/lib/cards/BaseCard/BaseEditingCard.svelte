@@ -4,8 +4,10 @@
 	import BaseCard from './BaseCard.svelte';
 	import type { Item } from '$lib/types';
 	import { Button, Popover } from '@foxui/core';
-	import { getCanEdit } from '$lib/helper';
+	import { getCanEdit, getIsMobile } from '$lib/helper';
 	import { ColorSelect } from '@foxui/colors';
+	import { CardDefinitionsByType, getColor } from '..';
+	import { COLUMNS } from '$lib';
 
 	let colorsChoices = [
 		{ class: 'text-base-500', label: 'base' },
@@ -38,7 +40,7 @@
 	} & WithElementRef<HTMLAttributes<HTMLDivElement>>;
 
 	let {
-		item,
+		item = $bindable(),
 		children,
 		ref = $bindable(null),
 		onsetsize,
@@ -47,16 +49,113 @@
 		...rest
 	}: BaseEditingCardProps = $props();
 
-	let selectedColor = $derived(
-		!item.color ? colorsChoices[0] : colorsChoices.find((c) => item.color === c.label)
-	);
+	let selectedColor = $derived(colorsChoices.find((c) => getColor(item) === c.label));
 
 	let canEdit = getCanEdit();
+	let isMobile = getIsMobile();
 
 	let colorPopoverOpen = $state(false);
+
+	const cardDef = $derived(CardDefinitionsByType[item.cardType]);
+
+	const minW = $derived(cardDef.minW ?? (isMobile() ? 4 : 2));
+	const minH = $derived(cardDef.minH ?? (isMobile() ? 2 : 2));
+
+	const maxW = $derived(cardDef.maxW ?? COLUMNS);
+	const maxH = $derived(cardDef.maxH ?? (isMobile() ? 12 : 6));
+
+	// Resize handle state
+	let isResizing = $state(false);
+	let resizeStartX = $state(0);
+	let resizeStartY = $state(0);
+	let resizeStartW = $state(0);
+	let resizeStartH = $state(0);
+
+	function handleResizeStart(e: PointerEvent) {
+		e.preventDefault();
+		e.stopPropagation();
+		isResizing = true;
+		resizeStartX = e.clientX;
+		resizeStartY = e.clientY;
+		// For mobile view, sizes are doubled so we need to account for that
+		resizeStartW = isMobile() ? (item.mobileW ?? item.w) : item.w;
+		resizeStartH = isMobile() ? (item.mobileH ?? item.h) : item.h;
+
+		document.addEventListener('pointermove', handleResizeMove);
+		document.addEventListener('pointerup', handleResizeEnd);
+	}
+
+	function handleResizeMove(e: PointerEvent) {
+		if (!isResizing || !ref) return;
+
+		// Get the container width to calculate cell size
+		const container = ref.closest('.\\@container\\/grid') as HTMLElement;
+		if (!container) return;
+
+		const containerRect = container.getBoundingClientRect();
+		const cellSize = containerRect.width / COLUMNS;
+
+		// Calculate delta in grid units (each visual unit is 2 grid units)
+		const deltaX = e.clientX - resizeStartX;
+		const deltaY = e.clientY - resizeStartY;
+
+		// Convert pixel delta to grid units (2 grid units = 1 visual cell)
+		const gridDeltaW = Math.round(deltaX / cellSize);
+		const gridDeltaH = Math.round(deltaY / cellSize);
+
+		let newW = resizeStartW + gridDeltaW;
+		let newH = resizeStartH + gridDeltaH;
+
+		console.log(item.mobileW, newW);
+		if (isMobile()) {
+			newW = Math.round(newW / 4) * 4;
+		} else {
+			newW = Math.round(newW / 2) * 2;
+		}
+		console.log(item.mobileW, newW);
+
+		// Clamp to min/max
+		newW = Math.max(minW, Math.min(maxW, newW));
+		newH = Math.max(minH, Math.min(maxH, newH));
+
+		// Only call onsetsize if size changed
+		const currentW = isMobile() ? (item.mobileW ?? item.w) : item.w;
+		const currentH = isMobile() ? (item.mobileH ?? item.h) : item.h;
+
+		if (newW !== currentW || newH !== currentH) {
+			onsetsize?.(newW, newH);
+		}
+	}
+
+	function handleResizeEnd() {
+		isResizing = false;
+		document.removeEventListener('pointermove', handleResizeMove);
+		document.removeEventListener('pointerup', handleResizeEnd);
+	}
+
+	function canSetSize(w: number, h: number) {
+		if (!cardDef) return false;
+
+		if (isMobile()) {
+			w *= 2;
+			h *= 2;
+		}
+
+		return w >= minW && w <= maxW && h >= minH && h <= maxH;
+	}
+
+	function setSize(w: number, h: number) {
+		if (isMobile()) {
+			w *= 2;
+			h *= 2;
+		}
+		onsetsize?.(w, h);
+	}
+
+	let settingsPopoverOpen = $state(false);
 </script>
 
-<BaseCard {item} {...rest} isEditing={true} bind:ref>
+<BaseCard {item} {...rest} isEditing={true} bind:ref showOutline={isResizing}>
 	{@render children?.()}
 
 	{#snippet controls()}
@@ -89,12 +188,12 @@
 
 			<div
 				class={[
-					'absolute -bottom-7 z-50 w-full items-center justify-center text-xs group-focus-within:inline-flex group-hover:inline-flex',
-					colorPopoverOpen ? 'inline-flex' : 'hidden'
+					'absolute -bottom-7 w-full items-center justify-center text-xs group-focus-within:inline-flex group-hover:inline-flex',
+					colorPopoverOpen || settingsPopoverOpen ? 'inline-flex' : 'hidden'
 				]}
 			>
 				<div
-					class="bg-base-100 border-base-200 dark:bg-base-800 dark:border-base-700 inline-flex items-center gap-0.5 rounded-2xl border p-1 px-2 shadow-lg"
+					class="bg-base-100 border-base-200 dark:bg-base-800 dark:border-base-700 z-[100] inline-flex items-center gap-0.5 rounded-2xl border p-1 px-2 shadow-lg"
 				>
 					<Popover bind:open={colorPopoverOpen}>
 						{#snippet child({ props })}
@@ -135,79 +234,123 @@
 						/>
 					</Popover>
 
-					<button
-						onclick={() => {
-							onsetsize?.(1, 1);
-						}}
-						class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-					>
-						<div class="border-base-900 dark:border-base-50 size-3 rounded-sm border-2"></div>
-
-						<span class="sr-only">set size to 1x1</span>
-					</button>
-
-					<button
-						onclick={() => {
-							onsetsize?.(2, 1);
-						}}
-						class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-					>
-						<div class="border-base-900 dark:border-base-50 h-3 w-5 rounded-sm border-2"></div>
-						<span class="sr-only">set size to 2x1</span>
-					</button>
-					<button
-						onclick={() => {
-							onsetsize?.(1, 2);
-						}}
-						class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-					>
-						<div class="border-base-900 dark:border-base-50 h-5 w-3 rounded-sm border-2"></div>
-
-						<span class="sr-only">set size to 1x2</span>
-					</button>
-					<button
-						onclick={() => {
-							onsetsize?.(2, 2);
-						}}
-						class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
-					>
-						<div class="border-base-900 dark:border-base-50 h-5 w-5 rounded-sm border-2"></div>
-
-						<span class="sr-only">set size to 2x2</span>
-					</button>
-
-					{#if onshowsettings}
+					{#if canSetSize(2, 2)}
 						<button
 							onclick={() => {
-								onshowsettings();
+								setSize(2, 2);
 							}}
 							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
 						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke-width="2"
-								stroke="currentColor"
-								class="size-5"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
-								/>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-								/>
-							</svg>
+							<div class="border-base-900 dark:border-base-50 size-3 rounded-sm border-2"></div>
 
-							<span class="sr-only">open card settings</span>
+							<span class="sr-only">set size to 1x1</span>
 						</button>
+					{/if}
+
+					{#if canSetSize(4, 2)}
+						<button
+							onclick={() => {
+								setSize(4, 2);
+							}}
+							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
+						>
+							<div class="border-base-900 dark:border-base-50 h-3 w-5 rounded-sm border-2"></div>
+							<span class="sr-only">set size to 2x1</span>
+						</button>
+					{/if}
+					{#if canSetSize(2, 4)}
+						<button
+							onclick={() => {
+								setSize(2, 4);
+							}}
+							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
+						>
+							<div class="border-base-900 dark:border-base-50 h-5 w-3 rounded-sm border-2"></div>
+
+							<span class="sr-only">set size to 1x2</span>
+						</button>
+					{/if}
+					{#if canSetSize(4, 4)}
+						<button
+							onclick={() => {
+								setSize(4, 4);
+							}}
+							class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2"
+						>
+							<div class="border-base-900 dark:border-base-50 h-5 w-5 rounded-sm border-2"></div>
+
+							<span class="sr-only">set size to 2x2</span>
+						</button>
+					{/if}
+
+					{#if cardDef.settingsComponent}
+						<Popover bind:open={settingsPopoverOpen}>
+							{#snippet child({ props })}
+								<button {...props} class="hover:bg-accent-500/10 cursor-pointer rounded-xl p-2">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke-width="2"
+										stroke="currentColor"
+										class="size-5"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+										/>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+										/>
+									</svg>
+								</button>
+							{/snippet}
+							<cardDef.settingsComponent bind:item />
+						</Popover>
 					{/if}
 				</div>
 			</div>
+
+			{#if cardDef.canResize !== false}
+				<!-- Resize handle at bottom right corner -->
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+
+				<div
+					onpointerdown={handleResizeStart}
+					class="bg-base-300/70 dark:bg-base-900/70 pointer-events-auto absolute right-0.5 bottom-0.5 hidden cursor-se-resize rounded-md rounded-br-3xl p-1 group-hover:block"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						class=" dark:text-base-400 text-base-600 size-4"
+					>
+						<circle cx="12" cy="5" r="1" /><circle cx="19" cy="5" r="1" /><circle
+							cx="5"
+							cy="5"
+							r="1"
+						/>
+						<circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle
+							cx="5"
+							cy="12"
+							r="1"
+						/>
+						<circle cx="12" cy="19" r="1" /><circle cx="19" cy="19" r="1" /><circle
+							cx="5"
+							cy="19"
+							r="1"
+						/>
+					</svg>
+					<span class="sr-only">Resize card</span>
+				</div>
+			{/if}
 		{/if}
 	{/snippet}
 </BaseCard>

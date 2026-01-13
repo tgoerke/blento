@@ -10,22 +10,38 @@ import { data } from './data';
 import { CardDefinitionsByType } from '$lib/cards';
 import type { Item } from '$lib/types';
 
-export async function loadData(
-	handle: string,
-	platform?: App.Platform,
-	forceUpdate: boolean = false
-): Promise<{
+type LoadedData = {
 	did: string;
 	data: DownloadedData;
 	additionalData: Record<string, unknown>;
 	updatedAt: number;
-}> {
-	if (!forceUpdate) {
-		const cachedResult = await platform?.env?.USER_DATA_CACHE?.get(handle);
+};
 
-		if (cachedResult) {
-			console.log('using cached result for handle', handle);
-			return JSON.parse(cachedResult);
+export async function loadData(
+	handle: string,
+	platform?: App.Platform,
+	forceUpdate: boolean = false
+): Promise<LoadedData> {
+	console.log(handle);
+	if (!forceUpdate) {
+		try {
+			const cachedResult = await platform?.env?.USER_DATA_CACHE?.get(handle);
+
+			if (cachedResult) {
+				const result = JSON.parse(cachedResult);
+				const update = result.updatedAt;
+				const timePassed = (Date.now() - update) / 1000;
+				console.log(
+					'using cached result for handle',
+					handle,
+					'last update',
+					timePassed,
+					'seconds ago'
+				);
+				return migrateData(JSON.parse(cachedResult));
+			}
+		} catch (error) {
+			console.log('getting cached result failed', error);
 		}
 	}
 
@@ -45,7 +61,9 @@ export async function loadData(
 		try {
 			if (Array.isArray(cfg)) {
 				for (const rkey of cfg) {
-					const record = getRecord({ did, collection, rkey });
+					const record = getRecord({ did, collection, rkey }).catch((error) => {
+						console.error('error getting record', rkey, 'for collection', collection);
+					});
 					promises.push({
 						collection,
 						rkey,
@@ -53,7 +71,9 @@ export async function loadData(
 					});
 				}
 			} else if (cfg === 'all') {
-				const records = listRecords({ did, collection });
+				const records = listRecords({ did, collection }).catch((error) => {
+					console.error('error getting records for collection', collection);
+				});
 				promises.push({ collection, record: records });
 			}
 		} catch (error) {
@@ -87,18 +107,22 @@ export async function loadData(
 
 	const additionDataPromises: Record<string, Promise<unknown>> = {};
 
-	const handleAndDid = { did, handle };
+	const loadOptions = { did, handle, platform };
 
 	for (const cardType of cardTypesArray) {
 		const cardDef = CardDefinitionsByType[cardType];
 
 		if (cardDef.loadData) {
-			additionDataPromises[cardType] = cardDef.loadData(
-				Object.values(downloadedData['app.blento.card'])
-					.filter((v) => cardType == v.value.cardType)
-					.map((v) => v.value) as Item[],
-				handleAndDid
-			);
+			additionDataPromises[cardType] = cardDef
+				.loadData(
+					Object.values(downloadedData['app.blento.card'])
+						.filter((v) => cardType == v.value.cardType)
+						.map((v) => v.value) as Item[],
+					loadOptions
+				)
+				.catch((error) => {
+					console.error('error getting additional data for', cardType, error);
+				});
 		}
 	}
 
@@ -122,5 +146,26 @@ export async function loadData(
 
 	await platform?.env?.USER_DATA_CACHE?.put(handle, JSON.stringify(result));
 
-	return result;
+	return migrateData(result);
+}
+
+function migrateFromV0ToV1(data: LoadedData): LoadedData {
+	for (const card of Object.values(data.data['app.blento.card']).map((i) => i.value) as Item[]) {
+		if (card.version) continue;
+		card.x *= 2;
+		card.y *= 2;
+		card.h *= 2;
+		card.w *= 2;
+		card.mobileX *= 2;
+		card.mobileY *= 2;
+		card.mobileH *= 2;
+		card.mobileW *= 2;
+		card.version = 1;
+	}
+
+	return data;
+}
+
+function migrateData(data: LoadedData): LoadedData {
+	return migrateFromV0ToV1(data);
 }

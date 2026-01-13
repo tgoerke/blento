@@ -4,6 +4,7 @@ import { getImageBlobUrl } from '$lib/website/utils';
 import EmbedCard from '../EmbedCard/EmbedCard.svelte';
 import type { CardDefinition } from '../types';
 import LivestreamCard from './LivestreamCard.svelte';
+import LivestreamEmbedCard from './LivestreamEmbedCard.svelte';
 import SidebarItemEmbedLivestreamCard from './SidebarItemEmbedLivestreamCard.svelte';
 import SidebarItemLivestreamCard from './SidebarItemLivestreamCard.svelte';
 
@@ -12,14 +13,13 @@ export const LivestreamCardDefitition = {
 	contentComponent: LivestreamCard,
 	sidebarComponent: SidebarItemLivestreamCard,
 	createNew: (card) => {
-		card.w = 2;
-		card.h = 1;
-		card.mobileH = 2;
-		card.mobileW = 4;
+		card.w = 4;
+		card.h = 4;
+		card.mobileH = 8;
+		card.mobileW = 8;
 	},
 	loadData: async (items, { did }) => {
 		const records = await listRecords({ did, collection: 'place.stream.livestream', limit: 3 });
-		console.log(records);
 
 		let latestLivestream:
 			| {
@@ -33,7 +33,6 @@ export const LivestreamCardDefitition = {
 		const values = Object.values(records);
 		if (values?.length > 0) {
 			const latest = JSON.parse(JSON.stringify(values[0]));
-			console.log(latest);
 
 			latestLivestream = {
 				createdAt: latest.value.createdAt,
@@ -70,13 +69,13 @@ export const LivestreamCardDefitition = {
 
 export const LivestreamEmbedCardDefitition = {
 	type: 'livestreamEmbed',
-	contentComponent: EmbedCard,
+	contentComponent: LivestreamEmbedCard,
 	sidebarComponent: SidebarItemEmbedLivestreamCard,
 	createNew: (card) => {
-		card.w = 2;
-		card.h = 1;
-		card.mobileH = 2;
-		card.mobileW = 4;
+		card.w = 4;
+		card.h = 2;
+		card.mobileW = 8;
+		card.mobileH = 4;
 
 		card.cardData = {
 			href: 'https://stream.place/embed/' + client.profile?.handle
