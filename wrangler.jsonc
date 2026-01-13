@@ -42,10 +42,9 @@
 	"kv_namespaces": [
 		{
 			"binding": "USER_DATA_CACHE",
-			"id": "d6ff203259de48538d332b0a5df258a7",
-			"remote": true
+			"id": "5d2d744414e94091945f394e8e61bb40"
 		}
-	]
+	],
 	/**
 	 * Service Bindings (communicate between multiple Workers)
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
