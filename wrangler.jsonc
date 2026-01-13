@@ -39,12 +39,6 @@
 		"PUBLIC_IS_SELFHOSTED": "true",
 		"PUBLIC_DOMAIN": "https://blento.t-goerke.workers.dev"
 	},
-	"kv_namespaces": [
-		{
-			"binding": "USER_DATA_CACHE",
-			"id": "5d2d744414e94091945f394e8e61bb40"
-		}
-	],
 	/**
 	 * Service Bindings (communicate between multiple Workers)
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
